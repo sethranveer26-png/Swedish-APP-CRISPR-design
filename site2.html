@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Allele-Specific CRISPR Design for the Swedish APP Mutation</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+/* Edit colours here. Blue = healthy, orange = Swedish/cut, yellow = Cas9/PAM, violet = nanoparticle */
+:root{--bg:#070B14;--panel:#0F1626;--pa:rgba(15,22,38,.92);--tx:#E6EAF2;--mu:#98A2B8;--ln:rgba(255,255,255,.14);--wt:#4C8DF6;--sw:#FB923C;--pm:#FACC15;--lp:#A78BFA;color-scheme:dark}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#F4F6FB;--panel:#FFFFFF;--pa:rgba(255,255,255,.93);--tx:#111827;--mu:#4B5563;--ln:rgba(0,0,0,.16);--wt:#1D4ED8;--sw:#C2410C;--pm:#A16207;--lp:#6D28D9;color-scheme:light}}
+:root[data-theme="dark"]{--bg:#070B14;--panel:#0F1626;--pa:rgba(15,22,38,.92);--tx:#E6EAF2;--mu:#98A2B8;--ln:rgba(255,255,255,.14);--wt:#4C8DF6;--sw:#FB923C;--pm:#FACC15;--lp:#A78BFA}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:400 15px/1.6 Inter,system-ui,sans-serif}
+.m,code,.seq{font-family:"JetBrains Mono",ui-monospace,monospace}
+a{color:var(--wt)}
+button{font:inherit;color:var(--tx);background:transparent;border:1px solid var(--ln);border-radius:8px;padding:7px 12px;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:2px solid var(--pm);outline-offset:2px}
+#view{position:sticky;top:0;height:100vh;height:100dvh;overflow:hidden;background:radial-gradient(circle at 50% 35%,var(--panel),var(--bg) 70%)}
+.sc{position:absolute;inset:56px 0 30% 0;will-change:transform,opacity}
+.sc svg{width:100%;height:100%}
+svg text{fill:var(--mu);font:12px Inter,sans-serif}
+svg .t{fill:var(--tx);font:700 32px "JetBrains Mono",monospace}
+.o{fill:none;stroke:var(--mu);stroke-width:2}.lw{fill:none;stroke:var(--wt);stroke-width:3}
+.top{position:absolute;left:0;right:0;top:env(safe-area-inset-top,0px);display:flex;justify-content:space-between;gap:10px;padding:10px 14px;z-index:5;align-items:center}
+#gauge{font-size:13px;color:var(--mu);border:1px solid var(--ln);border-radius:99px;padding:4px 12px;background:var(--pa)}
+.card{position:absolute;left:50%;bottom:calc(66px + env(safe-area-inset-bottom,0px));width:min(660px,calc(100% - 24px));max-height:54vh;overflow:auto;background:var(--pa);backdrop-filter:blur(10px);border:1px solid var(--ln);border-radius:14px;padding:16px 18px;transform:translate(-50%,14px);opacity:0;visibility:hidden;transition:opacity .3s,transform .3s,visibility .3s;z-index:4}
+.card.on{opacity:1;visibility:visible;transform:translate(-50%,0)}
+h1{font-size:clamp(22px,4.4vw,32px);line-height:1.15;margin:0 0 8px;letter-spacing:-.02em}
+h2{font-size:clamp(18px,3vw,22px);margin:0 0 6px;line-height:1.2}h3{font-size:16px;margin:18px 0 6px}
+.card p{margin:6px 0}
+.pill{display:inline-block;border:1px solid var(--pm);color:var(--pm);border-radius:99px;padding:2px 11px;font-size:13px}
+.note{border-left:3px solid var(--sw);padding:2px 0 2px 10px;margin:8px 0;color:var(--tx)}
+.note.p{border-color:var(--lp)}
+.tog{display:flex;gap:6px;margin:6px 0;flex-wrap:wrap}.tog button[aria-pressed="true"]{background:var(--tx);color:var(--bg)}
+.seq{font-size:14px;overflow-x:auto;white-space:nowrap;padding:6px 0}
+.seq span{display:inline-block;width:1.15ch;text-align:center}
+.seq .g{border-bottom:2px solid var(--mu)}.seq .m1{color:var(--sw);font-weight:700;border-bottom:2px solid var(--sw)}
+.seq .p{color:var(--pm);font-weight:700;border-bottom:2px solid var(--pm)}.seq .mm{color:var(--sw);font-weight:700}.seq .w{color:var(--wt)}
+.tw{color:var(--wt);font-weight:600}.ts{color:var(--sw);font-weight:600}
+table{border-collapse:collapse;width:100%;font-size:13.5px}th,td{border-bottom:1px solid var(--ln);padding:6px 8px;text-align:left;vertical-align:top}th{color:var(--mu)}
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:9;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));background:var(--pa);backdrop-filter:blur(10px);border-top:1px solid var(--ln)}
+.dots{display:flex;gap:6px}.dot{width:14px;height:14px;padding:0;border-radius:50%}.dot[aria-current="true"]{background:var(--pm);border-color:var(--pm)}
+#end{max-width:820px;margin:0 auto;padding:30px 18px 20px}
+#end ul,#end ol{padding-left:20px}#end li{margin:5px 0}
+.hint{color:var(--mu);font-size:13px;margin-top:8px}
+.home{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;max-width:1000px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 14px) 18px 40px}
+.site{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 0 40px}.site nav{display:flex;gap:16px;font-size:14px}.site a{color:var(--tx);text-decoration:none}.site a:hover{color:var(--pm)}
+.home h1{font-size:clamp(30px,6vw,54px);max-width:15em;margin:0 0 14px}.home .lead{font-size:18px;max-width:38em;color:var(--mu)}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}.btn{display:inline-block;padding:11px 18px;border-radius:10px;border:1px solid var(--ln);text-decoration:none;color:var(--tx);font-weight:600}.btn.main{background:var(--pm);color:#111;border-color:var(--pm)}
+.stats{display:flex;gap:26px;flex-wrap:wrap;margin:18px 0 0}.stats b{display:block;font:700 28px "JetBrains Mono",monospace;color:var(--pm)}.stats span{font-size:13px;color:var(--mu)}
+.glance{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:auto;padding-top:34px}.glance div{background:var(--panel);border:1px solid var(--ln);border-radius:12px;padding:14px 16px}.glance p{margin:4px 0 0;color:var(--mu);font-size:14px}
+.sec{max-width:820px;margin:0 auto;padding:56px 18px 10px}.sec ul,.sec ol{padding-left:20px}.sec li{margin:5px 0}
+@media (max-width:600px){.sc{inset:52px 0 38% 0}.card{max-height:50vh}}
+@media (prefers-reduced-motion:reduce){.card{transition:none}}
+
+body{padding-top:calc(env(safe-area-inset-top,0px) + 46px)}
+.nav{position:fixed;top:0;left:0;right:0;z-index:30;display:flex;gap:4px;align-items:center;padding:calc(env(safe-area-inset-top,0px) + 6px) 12px 6px;background:var(--pa);backdrop-filter:blur(10px);border-bottom:1px solid var(--ln);overflow-x:auto}
+.nav b{margin-right:auto;font-size:13px;white-space:nowrap;padding-right:10px}.nav a{padding:5px 10px;border-radius:8px;text-decoration:none;color:var(--tx);font-size:13px;white-space:nowrap}.nav a[aria-current="page"]{background:var(--tx);color:var(--bg)}
+.pg{display:none}.pg.on{display:block}.home.pg.on{display:flex}.home{min-height:calc(100vh - 46px)}
+#view{top:calc(env(safe-area-inset-top,0px) + 46px);height:calc(100vh - 46px - env(safe-area-inset-top,0px));height:calc(100dvh - 46px - env(safe-area-inset-top,0px));background:radial-gradient(circle at 40% 40%,var(--panel),var(--bg) 75%)}
+#cv{position:absolute;inset:0 392px 0 0;touch-action:pan-y;cursor:grab}#cv canvas{display:block;width:100%;height:100%}
+#lab{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lb{position:absolute;left:0;top:0;font-size:12px;line-height:1.2;background:var(--pa);border:1px solid var(--ln);border-radius:6px;padding:3px 8px;white-space:nowrap;opacity:0;transform:translate(-50%,-140%)}
+.lb::after{content:"";position:absolute;left:50%;top:100%;width:1px;height:12px;background:var(--pm)}
+#view .top{top:8px;left:12px;right:auto}
+#view .card{left:auto;right:12px;top:12px;bottom:72px;width:370px;max-height:none;transform:translateX(14px)}
+#view .card.on{transform:none}
+@media (max-width:760px){#cv{inset:0 0 48% 0}#view .card{left:12px;right:12px;top:auto;bottom:62px;width:auto;height:calc(48% - 66px);transform:translateY(14px)}}
+.pgx{max-width:820px;margin:0 auto;padding:40px 18px 70px}.pgx li{margin:5px 0}.pgx table{margin:10px 0}
+</style></head><body><nav class="nav" aria-label="Site"><b>Swedish APP · CRISPR design</b><a href="#home">Home</a><a href="#demo">Demo</a><a href="#project">Project</a><a href="#lnp">Nanoparticles</a><a href="#limits">Limitations</a><a href="#about">About me</a></nav>
+<main class="home pg" id="home">
+    <h1>Designing a CRISPR guide that tells two nearly identical genes apart</h1>
+  <p class="lead">A computational project on familial Alzheimer’s disease: one guide RNA for the Swedish APP mutation, and a proposal to deliver it to the brain with a lipid nanoparticle instead of viruses.</p>
+  <p><span class="pill">100% computational · built in Benchling · not tested in the lab or in animals</span></p>
+  <div class="btns"><a class="btn main" href="#demo">Start the zoom demo</a><a class="btn" href="#project">About the project</a><a class="btn" href="#about">About me</a></div>
+  <div class="stats"><div><b>2</b><span>letters separate the healthy and Swedish alleles</span></div><div><b>1</b><span>usable SpCas9 guide found in the analysed window</span></div><div><b>168</b><span>predicted off-target sites checked</span></div><div><b>0</b><span>lab experiments (all computational)</span></div></div>
+  <div class="glance"><div><b>The problem</b><p>A two-letter change in the APP gene makes the brain overproduce amyloid-beta.</p></div><div><b>What I built</b><p>A guide RNA, checked with Benchling and CRISPOR, with a simulated cut and frameshift.</p></div><div><b>What’s mine</b><p>The guide analysis and a lipid-nanoparticle delivery proposal, building on published work.</p></div></div>
+</main>
+<div id="track" class="pg"><div id="view"><div class="top"><span id="gauge" aria-live="polite"></span></div><div id="cv" role="img" aria-label="Interactive 3D model. Drag to rotate."><div id="lab"></div></div><article class="card" data-i="0"><h2>Start here: a two-letter typo in one gene</h2>
+    <p>Familial Alzheimer’s disease can be caused by a single dominant mutation. This project designs, entirely on a computer, a CRISPR guide RNA that targets the Swedish APP mutant allele while differing from the healthy allele at two letters, and proposes delivering the editor to the brain with a lipid nanoparticle instead of viruses.</p>
+    <p><span class="pill">100% computational · built in Benchling · not tested in the lab or in animals</span></p>
+    <p class="hint">Builds on György et al. 2018 and Cao et al. 2025. The guide analysis and the delivery proposal are this project’s own work. Scroll to zoom in; drag the image to rotate it.</p></article>
+
+  <article class="card" data-i="1"><h2>Why two letters matter</h2>
+    <p>In people with the Swedish mutation (KM670/671NL), one mutant copy (allele) of the APP gene is enough to cause disease. Enzymes cut the APP protein; beta-secretase and then gamma-secretase release amyloid-beta. The mutation sits next to the beta-secretase cut site, so the mutant protein is cut too easily and too much amyloid-beta is made.</p>
+    <p class="note"><b>Research question:</b> can a computer-designed guide RNA tell the mutant allele from the healthy one by two letters, and could a barrier-crossing nanoparticle carry the editor to the brain?</p>
+    <p>Strategy, following György et al. 2018: <b>disrupt</b> only the mutant allele rather than correct it, leaving the healthy copy working.</p></article>
+
+  <article class="card" data-i="2"><h2>Finding the target in 297,579 letters</h2>
+    <p>The human APP gene record NG_007376 sits on chromosome 21. It was imported into Benchling, and the exon 16 region around the mutation was isolated into two working files: healthy (wild-type) and Swedish.</p>
+    <p class="note p" style="border-color:var(--wt)">The healthy protein reads E-V-<b>K-M</b>-D-A-E-F-R at this spot; the Swedish version reads E-V-<b>N-L</b>-D-A-E-F-R.</p></article>
+
+  <article class="card" data-i="3"><h2>Two letters, one protein change</h2>
+    <div class="tog" role="group" aria-label="Choose allele"><button data-a="wt" aria-pressed="true">Healthy (WT)</button><button data-a="swe" aria-pressed="false">Swedish (SWE)</button></div>
+    <div class="seq" id="seq3" aria-label="DNA letters 30 to 56"></div><p id="txt3"></p>
+    <p class="hint">Orange: the two mutated letters (positions 48–49 in the working file). Yellow: the TGG landing site (PAM, positions 50–52).</p></article>
+
+  <article class="card" data-i="4"><h2>A guide that reads the difference</h2>
+    <p>The guide is a 20-letter address; Cas9 cuts only where it matches and a short PAM (here TGG) sits next to it. The seed region, the letters nearest the PAM, is where a mismatch matters most.</p>
+    <p class="m" style="font-size:13px">Guide 5′-GGAGATCTCTGAAGTGAATC-3′ + PAM TGG</p>
+    <div class="tog" role="group" aria-label="Choose target"><button data-t="swe" aria-pressed="true">Target: Swedish allele</button><button data-t="wt" aria-pressed="false">Target: healthy allele</button></div>
+    <div class="seq" id="seq4" aria-label="Guide aligned to target"></div><p id="txt4"></p>
+    <p class="note"><b>The TGG PAM is present in both alleles.</b> The discrimination comes from the two seed mismatches, not from a new PAM. Only one usable SpCas9 guide covering the mutation was found in the analysed window.</p></article>
+
+  <article class="card" data-i="5"><h2>Off-target audit</h2>
+    <table><tr><th>Predicted (Benchling, CRISPOR)</th><th>Swedish guide</th><th>WT version</th></tr>
+    <tr><td>Benchling off-target score (higher is more specific; confirm scale)</td><td class="m">65.8</td><td class="m">33.2</td></tr>
+    <tr><td>CRISPOR specificity scores (names to be confirmed)</td><td class="m">76, 89</td><td class="m">60, 76</td></tr>
+    <tr><td>Predicted sites</td><td class="m">168</td><td class="m">274</td></tr>
+    <tr><td>Sites with 0/1/2/3/4 mismatches</td><td class="m">0/0/3/17/148</td><td class="m">0/0/3/32/239</td></tr></table>
+    <p><b>2 mismatches:</b> 3 sites: the normal APP exon on chromosome 21 (the healthy allele is 2 letters away), plus two intergenic sites near LINC00544 and between COL12A1 and COX7A2. <b>3 mismatches:</b> 17 sites, none in exons. <b>4 mismatches:</b> about 148 sites, about 17 in exons (some pseudogenes); a few sit in brain-related genes and would need experimental checks.</p>
+    <p class="note">These are computational predictions, not measurements.</p></article>
+
+  <article class="card" data-i="6"><h2>Simulated cut and frameshift</h2>
+    <p>Cas9 cuts 3 letters before the PAM, between letters 46 and 47. As an illustration of one possible repair outcome, a one-letter insertion shifts the reading frame:</p>
+    <p class="m" style="font-size:13px">E V N L D A E F<br>↓ +1 letter ↓<br>E V I S G C R I P T <b style="color:var(--sw)">* stop</b></p>
+    <p>A stop signal would prevent that copy from making full-length mutant protein.</p>
+    <p class="note">Real repair produces a mix of insertions and deletions, and not all of them break the gene. This is a simulation, not a prediction of results.</p></article>
+
+  <article class="card" data-i="7"><h2>Delivery: a proposal</h2>
+    <p class="note p"><b>No source tests this particle with Cas9 mRNA or with this guide.</b></p>
+    <p><b>Original study:</b> AAV9 viruses. SpCas9 is about 4.1 kb and one AAV holds about 4.7 kb, so editors like this are commonly split or delivered in parts. <b>Proposed:</b> a lipid nanoparticle carrying SpCas9 mRNA plus the guide; mRNA is short-lived, so the editor works for days, not permanently.</p>
+    <table><tr><th>Cao et al. 2025 (OS4T), ratio units as published</th><th></th></tr>
+    <tr><td>S4 ionizable lipid: carries RNA, crosses the barrier</td><td class="m">40</td></tr>
+    <tr><td>DOPE: helper lipid</td><td class="m">40</td></tr>
+    <tr><td>Cholesterol: stability</td><td class="m">60</td></tr>
+    <tr><td>DMG-PEG2k: size and circulation</td><td class="m">0.75</td></tr>
+    <tr><td>Tat peptide on the surface</td><td>brain targeting</td></tr></table>
+    <p>Lipid-to-mRNA mass ratio 10:1; mouse dose 1 mg/kg, intravenous. <b>Benchmark (mice, reporter mRNA, not Cas9):</b> over 50-fold more brain mRNA translation than an FDA-approved LNP; about 13% of neurons showed the editing signal after one dose of Cre mRNA.</p></article></div></div>
+
+<section class="pg pgx" id="project"><h2>About the project</h2>
+<p>Familial Alzheimer’s disease can run in families because of a single dominant mutation. In the Swedish APP mutation, two letters of the APP gene change, the protein is cut too easily, and too much amyloid-beta is made. A person has one mutant and one healthy copy, so a therapy would need to switch off the mutant copy and spare the healthy one.</p>
+<h3>What was done</h3><ol><li>Imported the real human APP gene record into Benchling and built healthy and Swedish versions of the region.</li><li>Scanned for CRISPR landing sites and found one usable guide covering the mutation, with both letter differences in its seed region.</li><li>Checked it with Benchling and CRISPOR, including the genome-wide off-target list.</li><li>Simulated a cut and a one-letter repair that shifts the reading frame.</li><li>Specified the RNA cargo and proposed a lipid nanoparticle for delivery.</li></ol>
+<h3>What is original, and what is not</h3><p>The approach follows György et al. 2018, which delivered the editor with viruses. The guide analysis and the lipid-nanoparticle proposal, based on a formulation from Cao et al. 2025, are this project’s own work.</p>
+<h3>Files built in Benchling</h3><ol><li>APP wild-type (annotated reference region)</li><li>APP Swedish (mutated sequence and translation)</li><li>APP Swedish after Cas9 (+1 letter simulated edit)</li><li>sgRNA Swedish APP (20-letter spacer plus constant scaffold)</li><li>SpCas9 mRNA schematic (labeled stand-in with T7 promoter, Kozak, UTRs, NLS, Cas9 placeholder, poly-A)</li><li>Notebook entry: LNP design (formulation, route, AAV vs LNP comparison)</li></ol>
+<h3>What would come next</h3><p>Test the guide in cells carrying the Swedish mutation, measure how often the healthy allele is also cut, check off-target sites by sequencing, then test a nanoparticle carrying Cas9 mRNA and this guide in a mouse model.</p></section>
+
+<section class="pg pgx" id="lnp"><h2>Lipid nanoparticles: the delivery goal</h2>
+<p><b>Goal:</b> get Cas9 mRNA and the guide RNA into neurons without viruses, so the editor works for a few days and then disappears. <span class="pill">Proposal: no source tests this with Cas9 or this guide</span></p>
+<h3>How the particle would work</h3>
+<ol><li>Cas9 mRNA and the guide RNA are packed inside a lipid shell.</li><li>The particle is injected into the blood and carries a brain-targeting surface (a Tat peptide).</li><li>It crosses the blood-brain barrier and is taken into a neuron.</li><li>The RNA escapes the cell’s internal compartment, and the cell reads the mRNA to make Cas9.</li><li>Cas9 and the guide find the Swedish allele and cut it. The mRNA then fades within days.</li></ol>
+<h3>The recipe (Cao et al. 2025, OS4T), ratio units as published</h3>
+<table><tr><th>Component</th><th>Ratio</th><th>Role</th></tr><tr><td>S4 ionizable lipid</td><td class="m">40</td><td>Carries RNA, crosses the barrier, helps escape the endosome</td></tr><tr><td>DOPE</td><td class="m">40</td><td>Helper lipid for structure</td></tr><tr><td>Cholesterol</td><td class="m">60</td><td>Stability</td></tr><tr><td>DMG-PEG2k</td><td class="m">0.75</td><td>Size and circulation time</td></tr><tr><td>Tat peptide</td><td>surface</td><td>Brain targeting</td></tr></table>
+<p>Lipid-to-mRNA mass ratio 10:1; mouse dose 1 mg/kg, intravenous.</p>
+<h3>Why consider it instead of viruses</h3>
+<table><tr><th></th><th>Dual AAV (original study)</th><th>Lipid nanoparticle (proposed)</th></tr><tr><td>Cargo</td><td>DNA</td><td>mRNA and guide RNA</td></tr><tr><td>Size</td><td>About 4.7 kb per virus; SpCas9 is about 4.1 kb</td><td>No comparable limit</td></tr><tr><td>Editor lifetime</td><td>Long</td><td>Short (days)</td></tr><tr><td>Targeting</td><td>Neuron-specific promoter possible</td><td>No promoter; depends on the particle</td></tr><tr><td>Evidence in brain</td><td>Most data</td><td>Newer, mouse data, reporter mRNAs</td></tr></table>
+<h3>What the published result shows, and does not show</h3>
+<p>In mice, with reporter mRNA (not Cas9), the particle gave over 50-fold more brain mRNA translation than an FDA-approved LNP, and about 13% of neurons showed the editing signal after one intravenous dose of Cre mRNA. It reached neurons, astrocytes and microglia without preference.</p></section>
+
+<section class="pg pgx" id="end"><h2>Limitations</h2>
+<ul><li>Everything is computational. No lab, cell or animal experiments were done.</li><li>Two seed mismatches reduce, but may not eliminate, cutting of the healthy allele. Only experiments such as sequencing could measure this.</li><li>The 50-fold and 13% figures come from reporter mRNAs in mice, not Cas9 mRNA plus guide, and not humans.</li><li>The OS4T particle reached neurons, astrocytes and microglia without preference.</li><li>Off-target tools cannot prove safety.</li><li>How many neurons would need editing to affect disease is unknown. The amyloid hypothesis is debated, and the Swedish mutation affects very few families.</li><li>The Benchling and CRISPOR score labels are still to be confirmed.</li><li>This is not medical advice.</li></ul>
+<h3>Sources</h3><ul><li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC5992788">György et al. 2018, Molecular Therapy – Nucleic Acids</a></li><li><a href="https://alzforum.org/node/975236">Alzforum summary of the 2018 study</a></li><li><a href="https://pmc.ncbi.nlm.nih.gov/articles/pmid/40802746">Cao et al. 2025, Science Advances</a></li><li><a href="https://www.nature.com/articles/s41563-024-02114-5">Han et al. 2025, Nature Materials (barrier-crossing LNP)</a></li><li><a href="https://www.benchling.com">Benchling</a> and <a href="http://crispor.tefor.net">CRISPOR</a></li></ul></section>
+
+<section class="pg pgx" id="about"><h2>About me</h2>
+<!-- Edit this section: add your first name, a line about you, and any contact link you are comfortable sharing publicly. -->
+<p>I’m a student in The Knowledge Society (TKS) program, and I’m drawn to genetics and neuroscience. I built this as an iterate project to see how far I could take a real research idea using free tools.</p>
+<h3>What this project taught me</h3><ul><li>How CRISPR guides find their targets, and why a PAM and the seed region matter.</li><li>How to design and check a guide in Benchling and CRISPOR.</li><li>How to read research papers, find what they support, and mark what I could not verify.</li><li>How to explain a technical idea honestly, including its limits.</li></ul></section>
+<div class="bar"><button id="prev">Previous</button><div class="dots" id="dots"></div><button id="next">Next</button></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const P=(n,f)=>Array.from({length:n},(_,i)=>f(i)).join('');
+const rm=matchMedia('(prefers-reduced-motion:reduce)').matches;
+// ---- Sequence viewers (stages 4 and 5) ----
+const WT="GGAGATCTCTGAAGTGAAGATGGATGC",SW="GGAGATCTCTGAAGTGAATCTGGATGC",GD="GGAGATCTCTGAAGTGAATC";
+const sp=(c,k)=>`<span${k?` class="${k}"`:''}>${c}</span>`;
+function d3(a){const s=a==='wt'?WT:SW;$('#seq3').innerHTML=[...s].map((c,i)=>{const n=30+i;return sp(c,n>=50&&n<=52?'p':n===48||n===49?'m1':n<=49?'g':'')}).join('');
+$('#txt3').innerHTML=a==='wt'?'<span class="tw">WT</span> Codons AAG ATG → K M. Protein: E-V-K-M-D-A-E-F-R':'<span class="ts">SWE</span> Codons AAT CTG → N L. Protein: E-V-N-L-D-A-E-F-R';
+$$('[data-a]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.a===a))}
+function d4(t){const tg=t==='wt'?'GGAGATCTCTGAAGTGAAGA':GD;let g='',m='',x='';
+for(let i=0;i<20;i++){const ok=GD[i]===tg[i];g+=sp(GD[i],ok?'':'mm');m+=sp(ok?'|':'×',ok?'':'mm');x+=sp(tg[i],ok?(t==='wt'?'w':''):'mm')}
+$('#seq4').innerHTML=`<div>guide ${g}</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${m}</div><div>target ${x} ${sp('T','p')+sp('G','p')+sp('G','p')}</div>`;
+$('#txt4').innerHTML=t==='swe'?'<span class="ts">SWE</span> 20 of 20 letters match. Predicted: Cas9 can bind and cut.':'<span class="tw">WT</span> 2 mismatches at positions 1 and 2 from the PAM (the seed). Predicted: much less likely to cut, but not guaranteed to be zero.';
+$$('[data-t]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t))}
+$$('[data-a]').forEach(b=>b.onclick=()=>d3(b.dataset.a));$$('[data-t]').forEach(b=>b.onclick=()=>d4(b.dataset.t));d3('wt');d4('swe');
+
+// ---- 3D scenes (Three.js) ----
+const GA=['Human brain · about 10⁻¹ m','Neuron cell body · about 10⁻⁵ m','Chromosome 21 · about 10⁻⁶ m','DNA double helix · about 2 nm wide','Cas9 bound to DNA · about 10⁻⁹ m','Genome-wide search · 168 predicted sites','The cut site · letters 46 and 47','Lipid nanoparticle · about 10⁻⁷ m'];
+const G=[],LBL=[];let cs=0,rd,sc,cam;
+const cv=$('#cv');
+try{
+const T=THREE;rd=new T.WebGLRenderer({antialias:true,alpha:true});cv.insertBefore(rd.domElement,cv.firstChild);rd.setPixelRatio(Math.min(devicePixelRatio,2));
+sc=new T.Scene();cam=new T.PerspectiveCamera(40,1,.1,100);
+sc.add(new T.HemisphereLight(0xffffff,0x334466,.95));const dl=new T.DirectionalLight(0xffffff,1);dl.position.set(3,4,5);sc.add(dl);
+const C={wt:0x4c8df6,sw:0xfb923c,pm:0xfacc15,lp:0xa78bfa,bone:0xb4bccf,dark:0x56607a,mu:0x8b95ad,tl:0x5eead4};
+const M=(c,o=1,e=0)=>{const m=new T.MeshStandardMaterial({color:c,roughness:.45,metalness:.1,transparent:true,opacity:o,emissive:c,emissiveIntensity:e});m.userData.o=o;return m};
+const V=(x,y,z)=>new T.Vector3(x,y,z);
+const sph=(r,m,p,par)=>{const x=new T.Mesh(new T.SphereGeometry(r,20,20),m);x.position.set(...p);par.add(x);return x};
+const cyl=(a,b,r,m,par)=>{const d=new T.Vector3().subVectors(b,a),L=d.length(),x=new T.Mesh(new T.CylinderGeometry(r,r,L,8),m);x.position.copy(a).addScaledVector(d,.5);x.quaternion.setFromUnitVectors(V(0,1,0),d.normalize());par.add(x);return x};
+const fib=(k,n,r)=>{const y=1-2*(k+.5)/n,q=Math.sqrt(1-y*y),t=k*2.39996;return[Math.cos(t)*q*r,y*r,Math.sin(t)*q*r]};
+const lb=(par,t,p)=>{const o=new T.Object3D();o.position.set(...p);par.add(o);const e=document.createElement('div');e.className='lb';e.textContent=t;$('#lab').appendChild(e);LBL.push({o,e,s:cs})};
+const stage=f=>{const g=new T.Group();sc.add(g);G.push(g);f(g);cs++};
+// DNA ladder: i from 0..n-1 along x; mut/pam = index lists
+function helix(par,n,x0,dx,rad,mut,pam,tw=.55){const bm=M(C.mu,1,.1),rm_=M(C.wt,1,.2),ps=[];
+for(let i=0;i<n;i++){const x=x0+i*dx,a=i*tw,p1=V(x,Math.cos(a)*rad,Math.sin(a)*rad),p2=V(x,-Math.cos(a)*rad,-Math.sin(a)*rad);ps.push(p1);
+const hot=mut.includes(i)?C.sw:pam.includes(i)?C.pm:0;const mm=hot?M(hot,1,.7):null;
+sph(hot?.15:.09,mm||bm,[p1.x,p1.y,p1.z],par);sph(hot?.15:.09,mm||bm,[p2.x,p2.y,p2.z],par);cyl(p1,p2,hot?.06:.035,mm||rm_,par);
+if(i){const a2=(i-1)*tw,q1=V(x-dx,Math.cos(a2)*rad,Math.sin(a2)*rad),q2=V(x-dx,-Math.cos(a2)*rad,-Math.sin(a2)*rad);cyl(q1,p1,.03,bm,par);cyl(q2,p2,.03,bm,par)}}
+return ps}
+// 1 brain
+stage(g=>{g.userData.b=-1.45;const bg=new T.IcosahedronGeometry(1,5),pa=bg.attributes.position;
+for(let i=0;i<pa.count;i++){const x=pa.getX(i),y=pa.getY(i),z=pa.getZ(i),n=Math.sin(9*x+3*y)*Math.sin(8*y-2*z)*Math.sin(7*z+x),r=1+.06*n;pa.setXYZ(i,x*r*1.15,y*r*.85,z*r*1.45)}
+bg.computeVertexNormals();const m=new T.Mesh(bg,M(C.bone,1,.05));m.scale.setScalar(1.6);m.position.set(-1.76,.48,-.24);g.add(m);
+const cb=sph(.5,M(C.dark),[0,-.62,-1.2],m);cb.scale.set(1.1,.6,1);cyl(V(0,-.7,-.75),V(.05,-1.5,-.8),.12,M(C.dark),m);sph(.08,M(C.pm,1,.9),[1.12,-.3,.15],m);
+lb(m,'Cerebral cortex: outer layer of the brain',[.1,.9,.3]);lb(m,'Cerebellum',[0,-.75,-1.2]);lb(m,'Brainstem',[.05,-1.5,-.8]);lb(m,'Yellow dot: where we zoom in',[1.12,-.3,.15])});
+// 2 neuron
+stage(g=>{const so=sph(1,M(C.tl,.4,.1),[0,0,0],g);sph(.4,M(C.wt,1,.5),[0,0,0],g);const dm=M(C.tl,.8,.1);
+for(let k=0;k<7;k++){const a=k*.9,d=V(Math.cos(a),Math.sin(a),(k%3-1)*.4).normalize(),e=d.clone().multiplyScalar(2.7);cyl(d.clone().multiplyScalar(.95),e,.06,dm,g);
+for(const s of[-.6,.6]){const q=V(-d.y*s,d.x*s,.2).add(e.clone().multiplyScalar(1.15));cyl(d.clone().multiplyScalar(1.8),q,.04,dm,g)}}
+cyl(V(.95,-.25,0),V(4,-1.3,.3),.1,dm,g);
+for(let k=0;k<12;k++){const a=k*2.4,r=1.5+(k%3)*.25;sph(.11,M(C.sw,1,.5),[Math.cos(a)*r,Math.sin(a)*r*.8,Math.sin(a*1.7)*.5],g)}
+for(let k=0;k<26;k++){const[x,y,z]=fib(k,26,1.02);sph(.05,M(C.pm,1,.6),[x,y,z],g)}
+lb(g,'Cell body (soma) of a neuron',[-.7,-1.05,.5]);lb(g,'Nucleus: where the DNA is stored',[0,0,.45]);lb(g,'Dendrites: receive signals',[-1.9,1.5,0]);lb(g,'Axon: sends signals',[2.7,-.9,.3]);lb(g,'Orange: amyloid-beta clumps',[1.9,1.5,.2]);lb(g,'Yellow: APP proteins in the membrane',[.9,.9,.8])});
+// 3 chromosome
+stage(g=>{const inn=new T.Group();inn.position.y=-.63;g.add(inn);const a=M(C.mu,1,.05),b=M(C.dark,1,.05);
+for(let j=0;j<14;j++){const y=-1.8+j*.27,r=j===4?.15:.26;for(const x of[-.3,.3]){const c=new T.Mesh(new T.CylinderGeometry(r,r,.26,24),j%2?a:b);c.position.set(x,y,0);inn.add(c)}}
+const band=new T.Mesh(new T.CylinderGeometry(.29,.29,.2,24),M(C.sw,1,.8));band.position.set(-.3,.63,0);inn.add(band);
+lb(inn,'Chromosome 21: a copy and its duplicate, joined',[.3,1.95,0]);lb(inn,'Centromere: the pinch point',[.75,-.72,0]);lb(inn,'Short arm',[-.85,-1.4,0]);lb(inn,'Long arm',[.85,.2,0]);lb(inn,'Orange: the APP gene region',[-.8,.63,0])});
+// 4 helix
+stage(g=>{g.userData.b=.35;const dx=.21,inn=new T.Group();inn.position.x=-(-3.4+16.5*dx);g.add(inn);inn.rotation.x=-.5;helix(inn,34,-3.4,dx,.45,[16,17],[18,19,20]);
+lb(g,'Orange: the 2 mutated letters (positions 48 and 49)',[-.15,-.9,0]);lb(g,'Yellow: the PAM, TGG (positions 50 to 52)',[.65,.85,0]);lb(g,'Backbone: the sides of the ladder',[-2.2,1.1,0]);lb(g,'Each rung is one base pair (two paired letters)',[-1.6,-1.2,0])});
+// 5 Cas9
+stage(g=>{g.userData.b=.2;const inn=new T.Group();g.add(inn);helix(inn,28,-2.7,.2,.22,[],[24,25,26],.6).length;inn.position.y=-.95;
+sph(1.15,M(C.pm,.28,.1),[-.4,.5,0],g);sph(.95,M(C.pm,.28,.1),[.6,.4,.1],g);
+for(let i=0;i<20;i++)sph(.075,M(i>=18?C.sw:C.wt,1,.6),[-1.3+i*.15,-.35,.12],g);
+lb(g,'Cas9: the protein that cuts DNA',[-.8,1.5,0]);lb(g,'Guide RNA: 20 letters (blue beads)',[-1.6,-.05,0]);lb(g,'Orange: 2 seed mismatches vs the healthy allele',[1.2,.1,0]);lb(g,'DNA, held in place',[-2.2,-1.35,0]);lb(g,'Yellow: PAM, TGG',[2.2,-1.35,0])});
+// 6 off-target map
+stage(g=>{const ia=new T.InstancedMesh(new T.SphereGeometry(.07,10,10),M(C.mu,.85),165),d=new T.Object3D();let c=0;
+for(let k=0;k<168;k++){if([14,70,135].includes(k))continue;const[x,y,z]=fib(k,168,2.2);d.position.set(x,y,z);d.updateMatrix();ia.setMatrixAt(c++,d.matrix)}g.add(ia);
+[14,70,135].forEach(k=>sph(.17,M(C.sw,1,.7),fib(k,168,2.2),g));sph(.3,M(C.pm,1,.7),[0,0,0],g);
+lb(g,'Each grey dot: one predicted off-target site',[-1.4,1.7,1.3]);lb(g,'Orange: sites with only 2 mismatches',fib(14,168,2.2));lb(g,'Orange: the normal APP gene',fib(70,168,2.2));lb(g,'Yellow: our guide RNA',[0,0,.35])});
+// 7 cut
+stage(g=>{g.userData.b=.3;const L=new T.Group(),Rg=new T.Group();g.add(L,Rg);helix(L,13,-3.7,.2,.4,[],[]);helix(Rg,13,1.3,.2,.4,[],[]);
+sph(.24,M(C.sw,1,.9),[0,0,0],g);const ring=new T.Mesh(new T.TorusGeometry(.7,.03,8,40),M(0xef4444,.9,.9));ring.rotation.y=1.57;g.add(ring);
+lb(g,'Cas9 cuts here: between letters 46 and 47',[0,1.25,0]);lb(g,'Orange sphere: 1 inserted letter (simulated repair)',[0,-.7,0]);lb(g,'DNA before the cut',[-2.6,.8,0]);lb(g,'DNA after: reading frame shifts, then a STOP signal',[2.5,.8,0])});
+// 8 LNP
+stage(g=>{g.userData.b=0;const hs=new T.InstancedMesh(new T.SphereGeometry(.085,10,10),M(C.lp,1,.25),300),d=new T.Object3D();let c=0;
+for(let k=0;k<300;k++){const[x,y,z]=fib(k,300,1.5);if(x>.1&&y>.05&&z>.1)continue;d.position.set(x,y,z);d.updateMatrix();hs.setMatrixAt(c++,d.matrix)}hs.count=c;g.add(hs);
+for(let k=0;k<12;k++){const p=fib(k*25+7,300,1.5);if(p[0]>.1&&p[1]>.05&&p[2]>.1)continue;const q=fib(k*25+7,300,2.0);cyl(V(...p),V(...q),.02,M(C.lp),g);sph(.07,M(C.lp,1,.6),q,g)}
+const pts=i=>Array.from({length:12},(_,k)=>V(Math.cos(k*1.3+i)*.6*(.5+.5*Math.sin(k+i)),Math.sin(k*1.7+i)*.55,Math.cos(k*.9+1+i)*.55));
+const m1=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts(0)),90,.05,8),M(C.pm,1,.5)),m2=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts(2)),90,.035,8),M(C.wt,1,.5));g.add(m1,m2);
+const bb=new T.Mesh(new T.BoxGeometry(7,.18,2.4),M(C.dark,.5));bb.position.y=-2.4;g.add(bb);
+lb(g,'Lipid shell: S4, DOPE, cholesterol, PEG-lipid',[-1.3,1.2,1]);lb(g,'Yellow: Cas9 mRNA',[-.4,.5,.4]);lb(g,'Blue: guide RNA',[.5,-.4,.4]);lb(g,'Violet sticks: Tat peptides for brain targeting',[1.9,1.4,0]);lb(g,'Blood-brain barrier (schematic)',[0,-2.4,1.2])});
+
+// ---- Scroll-linked zoom + render loop ----
+const N=G.length,cards=$$('.card'),dots=$$('.dot');
+$('#dots').innerHTML=P(N,i=>`<button class="dot" aria-label="Stage ${i+1}"></button>`);const dts=$$('.dot');
+let vh=600,step=500,act=-1,drag=0,lx=0,ly=0,rot={x:0,y:0};const cl=v=>Math.max(0,Math.min(1,v)),vv=V(0,0,0);
+function size(){const v=$('#view');vh=v.clientHeight||innerHeight-46;step=.85*vh;$('#track').style.height=((N-1)*step+vh)+'px';const w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;rd.setSize(w,h);cam.aspect=w/h;cam.position.z=7*Math.max(1,1.1/cam.aspect);cam.updateProjectionMatrix()}
+cv.onpointerdown=e=>{drag=1;lx=e.clientX;ly=e.clientY};cv.onpointermove=e=>{if(drag){rot.y+=(e.clientX-lx)*.01;rot.x+=(e.clientY-ly)*.008;lx=e.clientX;ly=e.clientY}};addEventListener('pointerup',()=>drag=0);
+function loop(){requestAnimationFrame(loop);if(!$('#track').classList.contains('on'))return;const p=Math.max(0,Math.min(N-1,scrollY/step)),a=Math.round(p);
+if(a!==act){act=a;rot={x:0,y:0};cards.forEach((c,i)=>{c.classList.toggle('on',i===a);c.setAttribute('aria-hidden',String(i!==a))});dts.forEach((b,i)=>b.setAttribute('aria-current',String(i===a)));$('#gauge').textContent=GA[a]}
+if(!drag&&!rm)rot.y+=.003;
+G.forEach((g,i)=>{const d=p-i;let s=1,o=0;if(d>-1&&d<1){if(d<0){o=cl((d+.9)/.55);s=i===7?2.2-1.2*(1+d):.3+.7*(1+d)}else{o=cl((.9-d)/.55);s=1+d*1.8}}
+g.visible=o>.01;g.userData.o=o;g.scale.setScalar(rm?1:s);g.rotation.x=i===a?rot.x:0;g.rotation.y=(g.userData.b||0)+(i===a?rot.y:0);
+if(g.visible)g.traverse(c=>{if(c.material)c.material.opacity=c.material.userData.o*o})});
+rd.render(sc,cam);const w=cv.clientWidth,h=cv.clientHeight;
+LBL.forEach(l=>{const o=G[l.s].userData.o||0;if(l.s!==a||o<.6){l.e.style.opacity=0;return}l.o.getWorldPosition(vv);vv.project(cam);
+l.e.style.opacity=vv.z<1?cl((o-.6)/.4):0;l.e.style.left=((vv.x*.5+.5)*w)+'px';l.e.style.top=((-vv.y*.5+.5)*h)+'px'})}
+const go=i=>scrollTo({top:Math.max(0,Math.min(N-1,i))*step,behavior:rm?'auto':'smooth'});
+dts.forEach((b,i)=>b.onclick=()=>go(i));$('#prev').onclick=()=>go(Math.round(scrollY/step)-1);
+$('#next').onclick=()=>{const a=Math.round(scrollY/step);a>=N-1?location.hash='#project':go(a+1)};
+addEventListener('resize',size);window.size3=size;loop();
+}catch(err){cv.insertAdjacentHTML('beforeend','<p style="padding:20px;color:var(--mu)">The 3D view needs WebGL, which this browser could not start. The stage text still works on the right.</p>')}
+
+// ---- Pages (hash routing) ----
+const PG={home:'home',demo:'track',project:'project',lnp:'lnp',limits:'end',about:'about'};
+function route(){const k=location.hash.slice(1),id=PG[k]?k:'home';$$('.pg').forEach(e=>e.classList.toggle('on',e.id===PG[id]));
+$$('.nav a').forEach(a=>a.setAttribute('aria-current',a.getAttribute('href')==='#'+id?'page':'false'));$('.bar').style.display=id==='demo'?'flex':'none';scrollTo(0,0);if(id==='demo'&&window.size3)window.size3()}
+addEventListener('hashchange',route);route();
+</script></body></html>
